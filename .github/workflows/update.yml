@@ -1,0 +1,61 @@
+name: Update Congress trades
+
+on:
+  schedule:
+    - cron: "17 11 * * *"   # daily, ~6-7am Eastern
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install poppler (pdftotext)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+
+      - name: Restore filing cache
+        uses: actions/cache@v4
+        with:
+          path: cache
+          key: filings-${{ github.run_id }}
+          restore-keys: filings-
+
+      - name: Fetch House filings
+        run: python fetch.py
+
+      - name: Fetch Senate filings
+        continue-on-error: true   # if the Senate site blocks CI, keep the cached Senate data
+        run: python senate.py
+
+      - name: Build site
+        run: python build.py
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
