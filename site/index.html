@@ -246,6 +246,7 @@ $('#flagTabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;st.fl
 fetch('data/trades.json',{cache:'no-cache'}).then(r=>r.json()).then(d=>{D=d;M=d.members;T=d.trades;
   d.clusters.forEach((c,ci)=>c.idx.forEach(i=>clusterOf.set(i,ci)));
   const x=d.meta;$('#sub').textContent=`${x.trades.toLocaleString()} trades · House + Senate · updated ${new Date(x.generated).toLocaleDateString(undefined,{month:'short',day:'numeric'})}`;
+  const qp=new URLSearchParams(location.search).get('q');if(qp){st.q=qp;$('#q').value=qp}
   renderFeed();const h=location.hash.slice(1);if(['top','flags','about'].includes(h))show(h);
 }).catch(e=>{$('#feed').innerHTML='<div class="load">Couldn\'t load trades.json: '+esc(e.message)+'</div>'});
 </script>
